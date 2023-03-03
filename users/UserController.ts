@@ -1,8 +1,9 @@
 import express from "express"
+import { Role } from "./IUser"
 import IUser from "./IUser"
-import expressSession from "express-session"
+import { ReasonPhrases, StatusCodes } from "http-status-codes"
 
-const users : Array<IUser> = [{nom: "Alex", prenom: "winn", userID: 0, role: "admin", userName: "Ben", password: "alwibe"}]
+export const users : Array<IUser> = [{nom: "Alex", prenom: "winn", userID: 0, role: Role.admin, userName: "Ben", password: "alwibe"}]
 
 
 const router = express.Router()
@@ -15,6 +16,7 @@ router.get("/users", (req, res) => {
     
 })
 
+
 router.post("/create", (req, res) => {
     const user: IUser = {
         nom: req.body.nom,
@@ -25,20 +27,23 @@ router.post("/create", (req, res) => {
         password: req.body.password
     } 
 
-    if ((req.session as any).user.role === "admin"){
-        if ((user.role === "employe" || user.role ==="client") && (users.filter((u) => u.userName === req.body.userName).length < 1)){
+    const noDuplicate = (users.filter((u) => u.userName === req.body.userName).length < 1)
+
+    if ((req.session as any).user.role === Role.admin){
+        if ((user.role === Role.employee || user.role === Role.client) && noDuplicate){
             users.push(user)
             res.status(201)
             res.send({message: "user created", status: "Created"})
         }
         else{
             res.status(401)
-            res.send({message: "Your request is very bad man", status: "Bad"})
+            res.send({message: "not the right role or there is a duplicate username", status: "Bad"})
+            //res.status(StatusCodes.UNAUTHORIZED).send({message: "not the right role or there is a duplicate username"})
         }
     }
 
-    if ((req.session as any).user.role === "employe"){
-        if (user.role === "client"){
+    if ((req.session as any).user.role === Role.employee ){
+        if (user.role === Role.client && noDuplicate){
             users.push(user)
             res.status(201)
             res.send({message: "user created", status: "Created"})
